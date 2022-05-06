@@ -1,15 +1,19 @@
-# Basic Sample Hardhat Project
+# NFT Minter Machine
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
+A simple ERC721 minter machine that implemented by ERC721_extended contract.
 
-Try running some of the following tasks:
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
-```
+Feature:
+- Wallet support: Metamask, WalletConnect
+- Mint random token id
+- Whitelist 
+- Provenance Hash 
+- Reveal and Not reveal option, something similar to gacha system
+
+Note: In order to guarantee randomness, make sure to set reveal URI after all tokens were minted.
+
+
+Provenance Hash: https://medium.com/coinmonks/the-elegance-of-the-nft-provenance-hash-solution-823b39f99473
+
+
+Artwork: https://opensea.io/collection/friendly-skull
