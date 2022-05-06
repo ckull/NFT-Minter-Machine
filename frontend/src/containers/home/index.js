@@ -1,15 +1,18 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Flexbox from "flexbox-react";
 import Container from "./styled";
-import { ethers } from "ethers";
+import { providers , ethers } from "ethers";
 import Web3Modal from "web3modal";
 import Random from "../../assets/random.gif";
 import Appbar from "../../components/Appbar";
-import { Button } from "antd";
+import { 
+  Button, 
+  message 
+} from "antd";
 import contractInfo from '../../contracts/contract-address.json';
 import NFTContract from '../../contracts/NFT.json';
 
-// import WalletConnectProvider from "@walletconnect/web3-provider";
+import WalletConnectProvider from "@walletconnect/web3-provider";
 
 const Home = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -17,13 +20,21 @@ const Home = () => {
   const [contract, setContract] = useState();
   const [totalSupply, setTotalSupply] = useState(0);
   const [currentSupply, setCurrentSupply] = useState(0);
+  const [isMinting, setIsMinting] = useState(false)
 
-
-
+//  Create WalletConnect Provider
+const providerOptions = {
+  walletconnect: {
+    package: WalletConnectProvider, // required
+    options: {
+      infuraId: process.env.REACT_APP_INFURA_ID,
+    },
+  },
+};
   const web3Modal = new Web3Modal({
     network: "mainnet", // optional
     cacheProvider: false, // optional
-    providerOptions: {}, // required
+    providerOptions: providerOptions, // required
     disableInjectedProvider: false,
   });
 
@@ -108,11 +119,15 @@ const Home = () => {
 
   const handleMintButton = async () => {
     try {
+      setIsMinting(true)
       let tx = await contract.mint(walletAddress, 1);
       await tx.wait()
-      incrementSupply(1)
+      let currentSupply = await contract.tokenCount();
+      setCurrentSupply(currentSupply.toNumber())
     } catch(error){ 
       console.error(error)
+    } finally {
+      setIsMinting(false)
     }
   }
 
@@ -164,7 +179,7 @@ const Home = () => {
         <Flexbox>
             <span>{currentSupply}</span> / <span>{totalSupply}</span>
         </Flexbox>
-        <Button size="large" shape="round" type="primary" onClick={handleMintButton}>
+        <Button loading={isMinting} size="large" shape="round" type="primary" onClick={handleMintButton}>
           Mint
         </Button>
       </Flexbox>
