@@ -1,6 +1,6 @@
 # NFT Minter Machine
 
-A simple ERC721 minter machine that implemented by ERC721_extended contract.
+A simple ERC721 minter machine that implemented with [ERC721_extended](https://github.com/fluorish/ERC721_extended) contract.
 
 Feature:
 - Wallet support: Metamask, WalletConnect
