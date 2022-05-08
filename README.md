@@ -22,11 +22,13 @@ Feature:
 - opensea: https://testnets.opensea.io/collection/friendly-skull-not-reveal
 - contract address: https://rinkeby.etherscan.io/address/0x401bd94f62128144ae0d1ae0c9b672ac032358ed
 
+# Note 
+  In order to guarantee randomness, you need to set reveal URI after all tokens were minted.
 
-Note: In order to guarantee randomness, make sure to set reveal URI after all tokens were minted.
-
+# Ref
 
 Provenance Hash: https://medium.com/coinmonks/the-elegance-of-the-nft-provenance-hash-solution-823b39f99473
 
+NFT_REVEAL: https://github.com/HashLips/solidity_smart_contracts/blob/main/contracts/NFT/NFT_REVEAL.sol
 
 Artwork: https://opensea.io/collection/friendly-skull
