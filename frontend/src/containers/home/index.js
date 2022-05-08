@@ -1,84 +1,84 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Flexbox from "flexbox-react";
 import Container from "./styled";
-import { providers , ethers } from "ethers";
+import { providers, ethers } from "ethers";
 import Web3Modal from "web3modal";
 import Random from "../../assets/random.gif";
 import Appbar from "../../components/Appbar";
-import { 
-  Button, 
-  message 
-} from "antd";
-import contractInfo from '../../contracts/contract-address.json';
-import NFTContract from '../../contracts/NFT.json';
+import { Button, message } from "antd";
+import contractInfo from "../../contracts/contract-address.json";
+import NFTContract from "../../contracts/NFT.json";
 
 import WalletConnectProvider from "@walletconnect/web3-provider";
-
+import CONFIG from "../../config";
 const Home = () => {
+
   const [isConnected, setIsConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState();
   const [contract, setContract] = useState();
   const [totalSupply, setTotalSupply] = useState(0);
   const [currentSupply, setCurrentSupply] = useState(0);
-  const [isMinting, setIsMinting] = useState(false)
-
-//  Create WalletConnect Provider
-const providerOptions = {
-  walletconnect: {
-    package: WalletConnectProvider, // required
-    options: {
-      infuraId: process.env.REACT_APP_INFURA_ID,
+  const [isMinting, setIsMinting] = useState(false);
+  const [price, setPrice] = useState(0);
+  const [fetchLoading, setFetchLoading] = useState(false);
+  //  Create WalletConnect Provider
+  const providerOptions = {
+    walletconnect: {
+      package: WalletConnectProvider, // required
+      options: {
+        infuraId: process.env.REACT_APP_INFURA_ID,
+      },
     },
-  },
-};
+  };
   const web3Modal = new Web3Modal({
-    network: "mainnet", // optional
+    network: "rinkeby", // optional
     cacheProvider: false, // optional
     providerOptions: providerOptions, // required
     disableInjectedProvider: false,
   });
 
   const handleDisconnectWallet = async () => {
-      try {
-        await web3Modal.clearCachedProvider();
-        setIsConnected(false);
-      } catch(error) {
-          console.error(error)
-      }
-  
-  }
+    try {
+      await web3Modal.clearCachedProvider();
+      setIsConnected(false);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const fetchContractData = async () => {
     try {
+      setFetchLoading(true);
       let currentSupply = await contract.tokenCount();
       let totalSupply = await contract.totalSupply();
-   
-      setCurrentSupply(currentSupply.toNumber())
-      setTotalSupply(totalSupply.toNumber())
-    } catch(error) {
-      console.error(error)
+      let price = await contract.price();
+      setCurrentSupply(currentSupply.toNumber());
+      setTotalSupply(totalSupply.toNumber());
+      setPrice(ethers.utils.formatEther(price));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setFetchLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    let provider = ethers.providers.getDefaultProvider('http://localhost:8545');
-    let wallet = new ethers.Wallet(process.env.REACT_APP_PRIVATE_KEY, provider);
+    let provider = ethers.providers.getDefaultProvider("rinkeby");
 
     const contract = new ethers.Contract(
       contractInfo.address,
       NFTContract.abi,
-      wallet
-    )
+      provider
+    );
 
-    setContract(contract)
-
-  }, [])
+    setContract(contract);
+  }, []);
 
   useEffect(() => {
-    if(contract) {
-      fetchContractData()
+    if (contract) {
+      fetchContractData();
     }
-  }, [contract])
+  }, [contract]);
 
   const handleConnectWalletButton = async () => {
     try {
@@ -87,15 +87,22 @@ const providerOptions = {
       const provider = new ethers.providers.Web3Provider(instance);
       const signer = provider.getSigner();
 
+      instance.on("accountsChanged", (accounts) => {
+        setWalletAddress(accounts[0])
+      });
+
       if (signer) {
         setIsConnected(true);
-        const contract = new ethers.Contract(
-          contractInfo.address,
-          NFTContract.abi,
-          signer
-        )
-  
-        setContract(contract);
+        // const contract = new ethers.Contract(
+        //   contractInfo.address,
+        //   NFTContract.abi,
+        //   signer
+        // );
+
+        // setContract(contract);
+        let instance = contract.connect(signer);
+        console.log("instance: ", instance);
+        setContract(instance);
         try {
           const address = await signer.getAddress();
           setWalletAddress(address);
@@ -108,28 +115,23 @@ const providerOptions = {
     }
   };
 
-  const incrementSupply = (amount) => {
-    if(currentSupply + amount > totalSupply) {
-      setCurrentSupply(totalSupply)
-    } 
-
-    setCurrentSupply(currentSupply => currentSupply + amount)
-  }
-
-
   const handleMintButton = async () => {
+    let mintAmount = 1;
     try {
-      setIsMinting(true)
-      let tx = await contract.mint(walletAddress, 1);
-      await tx.wait()
+      setIsMinting(true);
+      let tx = await contract.mint(walletAddress, mintAmount, {
+        gasLimit: CONFIG.GAS_LIMIT * mintAmount,
+        value: ethers.utils.parseEther(String(price * mintAmount)),
+      });
+      await tx.wait();
       let currentSupply = await contract.tokenCount();
-      setCurrentSupply(currentSupply.toNumber())
-    } catch(error){ 
-      console.error(error)
+      setCurrentSupply(currentSupply.toNumber());
+    } catch (error) {
+      console.error(error);
     } finally {
-      setIsMinting(false)
+      setIsMinting(false);
     }
-  }
+  };
 
   const connectWalletContent = () => {
     return (
@@ -158,7 +160,46 @@ const providerOptions = {
     );
   };
 
+  const soldoutContent = () => {
+    return (
+      <Flexbox
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+        flexGrow={1}
+        style={{ gap: "2rem" }}
+      >
+        <Flexbox>
+          <h1>Sold out</h1>
+          <br />
+        </Flexbox>
+        <Flexbox>
+          <div style={{ display: "inline-block", textAlign: "center" }}>
+            <span>All assets were minted.</span>
+            <br />
+            <span>
+              Please visit <a href={CONFIG.COLLECTION_URL}>opensea</a> for
+              secondary marketplace.
+            </span>
+          </div>
+        </Flexbox>
+      </Flexbox>
+    );
+  };
+
+  const loadingContent = (isLoading, element) => {
+    if (isLoading) {
+      return "loading ...";
+    } else {
+      return element;
+    }
+  };
+
   const minterContent = () => {
+    if (!!currentSupply & !!totalSupply && currentSupply === totalSupply) {
+      return soldoutContent();
+    }
+
     return (
       <Flexbox
         flexDirection="column"
@@ -174,12 +215,25 @@ const providerOptions = {
           style={{ width: "100px", height: "100px" }}
         />
         <Flexbox>
-            <span>Address: {walletAddress}</span>
+          <span>Address: {walletAddress}</span>
         </Flexbox>
         <Flexbox>
-            <span>{currentSupply}</span> / <span>{totalSupply}</span>
+          {loadingContent(fetchLoading, (<span>Price: {price} ETH</span>))}
         </Flexbox>
-        <Button loading={isMinting} size="large" shape="round" type="primary" onClick={handleMintButton}>
+        <Flexbox>
+          {loadingContent(
+            fetchLoading,
+            (< ><span>{currentSupply}</span>/<span>{totalSupply}</span></>)
+          )}
+        </Flexbox>
+        <Button
+          disabled={fetchLoading}
+          loading={isMinting}
+          size="large"
+          shape="round"
+          type="primary"
+          onClick={handleMintButton}
+        >
           Mint
         </Button>
       </Flexbox>
@@ -188,15 +242,16 @@ const providerOptions = {
 
   return (
     <Container>
-      {isConnected && <Appbar>
-        <Button
-          danger
-          type="text"
-          onClick={handleDisconnectWallet}
-        >
-          Disconnect
-        </Button>
-      </Appbar>}
+      {isConnected && (
+        <Appbar>
+          <Button type="link" onClick={() => window.open(CONFIG.COLLECTION_URL)}>
+            Opensea
+          </Button>
+          <Button danger type="text" onClick={handleDisconnectWallet}>
+            Disconnect
+          </Button>
+        </Appbar>
+      )}
       <Flexbox
         id="body"
         alignItems="center"

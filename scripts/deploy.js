@@ -20,12 +20,12 @@ async function main() {
     'friendly-skull',
     '',
     'FS',
-    'ipfs://Qmb4jgeY8UQ5JXiZp1gVbEdk8LS1q68CCDp43RJGHdBwPB'
+    'ipfs://QmbNqy8zU3ZDLigbPv93n1WJk56xZzmxxZzSLE7pHZfjUr'
   );
 
   await contract.deployed();
 
-  // console.log("contract deployed to:", contract.address);
+  console.log("contract deployed to:", contract.address);
   saveFrontendFiles(contract)
 
 }
